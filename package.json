@@ -1,6 +1,6 @@
 {
   "name": "@palpitation6/dsh-update-guard",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "license": "MIT",
   "author": "palpitation6",
@@ -22,7 +22,7 @@
     "url": "https://github.com/palpitation6/dsh-update-guard/issues"
   },
   "engines": {
-    "dsh": "^0.2.3-alpha.2"
+    "dsh": ">=0.2.3-alpha.2"
   },
   "exports": {
     ".": "./index.js",

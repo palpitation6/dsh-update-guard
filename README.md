@@ -3,6 +3,26 @@
 Shows which installed plugins support the DSH release a Desktop update would
 install, and asks for one confirmation before the download starts.
 
+## Compatibility
+
+Declared range: `>=0.2.3-alpha.2`. The bundle loads on every DSH release from
+0.2.3-alpha.2 onward, prereleases included, and is not capped at the next minor
+line, so an update does not disable the guard that is meant to warn about it.
+Development and verification used the 0.2.x line; newer lines are best effort.
+
+What a later release can change, and what you would see:
+
+| Dependency | If a release changes it |
+|---|---|
+| Host exact Fetch route (`connection.fetch.register`) | the dialog still opens and reports that compatibility could not be checked; the update can still continue |
+| `pluginManager` listings | falls back to the profile `package.json`, so installed bundles are still listed |
+| `shell.overlay` slot or its `hooks` projection | the dialog entry stops activating, so the update control behaves as if the bundle were absent |
+| Electron `dshDesktop.updates` bridge or the shell's update control | the control is not intercepted and the download runs unchanged |
+| the `settings` locale key behind the control label | interception falls back to the eight shipped translations; a renamed key with new wording is not recognised |
+
+None of these breaks the application or the update itself: this bundle only adds
+a confirmation in front of a download the shell already owns.
+
 ## What it does
 
 The Desktop app offers a new DSH release through the update control in the
@@ -69,7 +89,7 @@ control to guard, and the bundle stays idle.
 
 Paste either spec into **Plugins → Add plugin**:
 
-- the npm package, once published: `@palpitation6/dsh-update-guard@1.0.1`
+- the npm package, once published: `@palpitation6/dsh-update-guard@1.0.2`
 - this repository pinned to a commit, which DSH can later update from the same
   spec: `git+https://github.com/palpitation6/dsh-update-guard.git#<full-40-character-commit>`
 
