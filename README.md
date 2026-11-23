@@ -1,146 +1,88 @@
-# Update guard
+# 更新前检查插件兼容性
 
-Shows which installed plugins support the DSH release a Desktop update would
-install, and asks for one confirmation before the download starts.
+在 Desktop 端下载 DSH 更新之前，先列出已安装插件是否声明支持这次要安装的版本，只用一次确认决定要不要下载。
 
-## Compatibility
+## 兼容性
 
-Declared range: `>=0.2.3-alpha.2`. The bundle loads on every DSH release from
-0.2.3-alpha.2 onward, prereleases included, and is not capped at the next minor
-line, so an update does not disable the guard that is meant to warn about it.
-Development and verification used the 0.2.x line; newer lines are best effort.
+声明范围：`>=0.2.3-alpha.2`。从 0.2.3-alpha.2 起（含预发布版本）的任何 DSH 版本都能加载，不封顶到下一个次版本线，因此更新不会把「用来提醒你更新」的这个插件自己先停用。开发与验证基于 0.2.x 线，更新版本线属于尽力支持。
 
-What a later release can change, and what you would see:
+以后 DSH 若改动了下列依赖，你会看到什么：
 
-| Dependency | If a release changes it |
+| 依赖 | 被改动后的表现 |
 |---|---|
-| Host exact Fetch route (`connection.fetch.register`) | the dialog still opens and reports that compatibility could not be checked; the update can still continue |
-| `pluginManager` listings | falls back to the profile `package.json`, so installed bundles are still listed |
-| `shell.overlay` slot or its `hooks` projection | the dialog entry stops activating, so the update control behaves as if the bundle were absent |
-| Electron `dshDesktop.updates` bridge or the shell's update control | the control is not intercepted and the download runs unchanged |
-| the `settings` locale key behind the control label | interception falls back to the eight shipped translations; a renamed key with new wording is not recognised |
+| Host 精确 Fetch 路由（`connection.fetch.register`） | 弹窗照常出现，但提示「无法检查插件兼容性」；仍可取消或仍然更新 |
+| `pluginManager` 的清单接口 | 退化为读取 profile 的 `package.json`，仍能列出已安装组合包 |
+| `shell.overlay` 槽位或其 `hooks` 投影 | 弹窗条目不再激活，更新按钮的行为等同于没装这个插件 |
+| Electron 的 `dshDesktop.updates` 桥或外壳的更新按钮 | 点击不再被拦截，下载按原样进行 |
+| 按钮文案背后的 `settings` 词条 | 拦截退回八种随包翻译；词条改名且措辞也变时无法识别 |
 
-None of these breaks the application or the update itself: this bundle only adds
-a confirmation in front of a download the shell already owns.
+以上任何一种都不会让应用崩溃，也不会阻断更新：这个包只是在下载前加一层确认，下载本身仍由外壳负责。
 
-## What it does
+## 功能
 
-The Desktop app offers a new DSH release through the update control in the
-sidebar footer (labelled **Update** / **新版本**). Choosing it normally starts the
-download immediately. With this bundle loaded, that one click first opens a
-confirmation dialog:
+Desktop 通过侧栏底部的更新控件（显示为 **新版本** / **Update**）提示有新版本；平时点它就会立刻开始下载。装上这个组合包后，这一次点击会先弹出确认框：
 
-- **Everything declared compatible** — the dialog reports how many plugins were
-  checked and one click on **Update to …** continues the download exactly as
-  before.
-- **Some plugins declare no support** — the dialog names them with their
-  installed version and the requirement the target release fails, for example
-  `engines.dsh: >=0.2.2-rc.1 <0.2.3-0`. You can cancel, or choose
-  **Update anyway**.
-- **Plugins that declare no DSH requirement** are counted separately instead of
-  being called compatible, so the headline never claims a support nobody
-  declared.
-- **Some manifests could not be read** — those plugins are named separately and
-  are not counted as conflicts.
-- **The check failed** — the dialog says why and offers **Retry**, **Cancel**,
-  and still **Update anyway**.
+- **都声明兼容** —— 弹窗给出已检查的插件数量，点一次「更新到 …」即按原流程继续下载。
+- **有插件声明不支持** —— 列出插件名、当前版本，以及目标版本不满足的要求，例如 `engines.dsh: >=0.2.2-rc.1 <0.2.3-0`；可以取消，也可以选「仍然更新」。
+- **未声明 DSH 版本要求的插件** 会单独计数，不会被当成兼容，标题不会替它们声称支持。
+- **清单读不出来的插件** 单独列出，不计入冲突。
+- **检查失败** —— 说明原因，并提供「重试」「取消」，以及「仍然更新」。
 
-A plugin that is already disabled does not count as a conflict, because DSH never
-loads it; if only disabled plugins declare no support, the dialog says so. The
-guard does not list itself.
+已经停用的插件不算冲突，因为 DSH 本来就不会加载它；如果只有已停用的插件声明不支持，弹窗会明确这么说。这个插件不会把自己列进清单。
 
-Cancelling closes the dialog without downloading anything. The shell's own
-download progress, verification, install confirmation, and restart stay
-unchanged; the guard only adds the confirmation in front of the download.
+取消即关闭弹窗，不会下载任何内容。外壳自己的下载进度、校验、安装确认和重启流程都保持不变；这里只是在下载前加一次确认。
 
-## How compatibility is decided
+## 兼容性如何判定
 
-The Host reproduces the rule DSH itself applies to a plugin
-(`evaluatePluginCompatibility` in `@deepseek-ai/dsh-app-boot`):
+Host 复刻了 DSH 自己加载插件时用的规则（`@deepseek-ai/dsh-app-boot` 里的 `evaluatePluginCompatibility`）：
 
-- an own `engines.dsh` range decides alone; otherwise
-- every `@deepseek-ai/dsh` and `@deepseek-ai/dsh-*` peer range must match, and
-- ranges are tested with SemVer including prerelease versions, so
-  `^0.2.3-alpha.2` accepts `0.2.4-alpha.1` and `0.2.9`, while
-  `>=0.2.2-rc.1 <0.2.3-0` rejects both.
+- 插件自己声明了 `engines.dsh` 时，只看这一条；否则
+- 每一个 `@deepseek-ai/dsh` 与 `@deepseek-ai/dsh-*` 的 peer 范围都必须满足；且
+- 范围按 SemVer 判定并让预发布版本参与，因此 `^0.2.3-alpha.2` 接受 `0.2.4-alpha.1` 和 `0.2.9`，而 `>=0.2.2-rc.1 <0.2.3-0` 会把两者都拒掉。
 
-The answer is therefore what the updated Host will apply to the same manifests.
-Bundles that DSH ships with the installation are not listed: they follow the
-release by construction.
+所以弹窗给出的结论，就是更新后的宿主对同一批清单会执行的结论。DSH 随安装提供的组合包不在清单里：它们按构造跟随版本。
 
-## Where the data comes from
+## 数据来源
 
-The browser half asks one authenticated route, `GET /api/dsh-update-guard/report`,
-which the Host half registers while the bundle is mounted. For the requested
-target release the Host reads `pluginManager.listBundles()` and
-`listPlugins()`, then reads each third-party package's `package.json` from the
-profile. Nothing is cached, no plugin is loaded or activated, and no network
-request leaves the machine. If the plugin manager is not composed, the profile
-`package.json` bundle list is used instead.
+浏览器半只请求一个需要鉴权的路由 `GET /api/dsh-update-guard/report`，由 Host 半在组合包挂载期间注册。对请求里的目标版本，Host 读取 `pluginManager.listBundles()` 与 `listPlugins()`，再从 profile 里读取每个第三方包的 `package.json`。结果不缓存，不加载或激活任何插件，也不发起对外网络请求。若当前组合没有插件管理器，则改用 profile 的 `package.json` 里的组合包清单。
 
-## Use it
+## 使用
 
-Install the bundle, then choose **Update** / **新版本** in the sidebar footer
-when one is offered. The dialog appears before anything downloads. The gate
-needs the Desktop application: in an ordinary browser page there is no update
-control to guard, and the bundle stays idle.
+安装并选中这个组合包，之后侧栏底部出现 **新版本** 时点它，弹窗会在任何内容开始下载之前出现。这项拦截依赖 Desktop 应用：普通浏览器页面没有可拦截的更新控件，插件保持空转。
 
-## Install
+## 安装
 
-Paste either spec into **Plugins → Add plugin**:
+在 **Plugins → Add plugin** 里粘贴下面任意一种规格：
 
-- the npm package, once published: `@palpitation6/dsh-update-guard@1.0.2`
-- this repository pinned to a commit, which DSH can later update from the same
-  spec: `git+https://github.com/palpitation6/dsh-update-guard.git#<full-40-character-commit>`
+- 发布到 npm 之后：`@palpitation6/dsh-update-guard@1.0.3`
+- 固定到某个 commit 的这个仓库（之后还能沿同一规格更新）：
+  `git+https://github.com/palpitation6/dsh-update-guard.git#<完整的 40 位 commit>`
 
-The Host half activates when the bundle is selected. The dialog reaches an open
-desktop window through the client bundle; a page refresh applies it when the
-client bundle was not hot-reloaded.
+组合包被选中后 Host 半即刻生效。弹窗由客户端组合包送到已打开的桌面窗口；如果客户端组合包没有热重载，刷新一次页面即可生效。
 
-## Update
+## 更新
 
-The profile stores exactly what was installed, so an update keeps the same spec
-kind:
+profile 里保存的就是当初安装的规格，所以更新沿用同一种规格：
 
-- **Registry install** (the npm package): the Plugins page lists the newer
-  published version and updates in place. Bump `version` before publishing; the
-  manager only offers versions higher than the installed one.
-- **Git install**: install the new commit with the same pinned form —
-  `git+https://github.com/palpitation6/dsh-update-guard.git#<new-full-commit>`.
-  The manager removes the installed copy, installs the new commit with the same
-  selection, and reinstalls the previous copy if that fails. A branch, tag, or
-  range spec cannot be updated this way, and the commit must be the full
-  40-character id.
-- **Local directory install**: installation links the directory, so editing the
-  files is the update. Re-selecting the row recomposes it.
+- **registry 安装（npm 包）**：Plugins 页面会列出更高的已发布版本并原地更新。发布前先升 `version`，管理器只提供高于已装版本的版本。
+- **Git 安装**：用同样的固定形式安装新 commit ——
+  `git+https://github.com/palpitation6/dsh-update-guard.git#<新的完整 commit>`。
+  管理器会先移除已装副本、在同一选择下安装新 commit；安装失败则把旧副本装回来。分支、标签、范围规格不能这样更新，commit 必须是完整的 40 位 id。
+- **本地目录安装**：安装即链接该目录，改文件就是更新；重新选中该行会重新组合。
 
-The Profile keeps its selected bundle across all three paths, so nothing else
-needs re-enabling after an update.
+三条路径都会保留 profile 里已选中的组合包，更新后不需要再手动启用。
 
-## Limitations
+## 限制
 
-- Only the Desktop update control in the sidebar footer is gated. The native
-  application menu's **Check for Updates…** item and enterprise mandatory
-  updates run in the Electron shell before any page code, so they cannot be
-  intercepted from a plugin.
-- The guard reads declared version ranges; it cannot know whether a plugin is
-  actually broken by an update that its range permits.
-- The target version is whatever the shell reports for the offered update; if
-  the shell starts a download without that control, the dialog is not involved.
-- Plugins installed as a `file:`/`link:` directory are checked from that
-  directory's manifest, so editing it changes the answer.
-- The Host locates the profile from a live plugin row that names its own
-  location, then from `DSH_PROFILE_DIR`, then from the profile under the
-  Harness home that selects this bundle. A Host booted without any profile
-  cannot answer, and the dialog reports the failure.
-- The dialog is available in English and Chinese; other application languages
-  fall back to English.
+- 只拦截侧栏底部的 Desktop 更新控件。应用原生菜单里的 **检查更新…** 以及企业强制更新在 Electron 外壳中、任何页面代码之前执行，插件无法拦截。
+- 这里读取的是插件声明的版本范围，无法知道某个插件是否真的会被「范围允许」的更新弄坏。
+- 目标版本取自外壳对这次更新报告的值；如果外壳在没有经过该控件的情况下开始下载，弹窗不会参与。
+- 以 `file:`/`link:` 目录安装的插件，检查的是该目录里的清单，改动文件就会改变结论。
+- Host 定位 profile 的顺序是：先看自带绝对路径的插件行，再看 `DSH_PROFILE_DIR`，最后在 Harness home 下找选中了本组合包的 profile。完全没有 profile 启动的 Host 无法回答，弹窗会如实报错。
+- 弹窗提供中文和英文；其他应用语言回退到英文。
 
-## Notes
+## 说明
 
-- The check reports the running Host's installed plugins; a plugin installed in
-  another profile is not considered.
-- Version exemptions saved for the current release do not carry over to the
-  target release, so an exempted mismatch is still listed.
-- A malformed `engines.dsh` is reported as a conflict, which is also how DSH
-  treats such a manifest at load time.
+- 检查针对当前运行 Host 的已安装插件；装在另一个 profile 里的插件不会计入。
+- 为当前版本保存的版本豁免不会顺延到目标版本，因此被豁免过的冲突仍会被列出。
+- 格式错误的 `engines.dsh` 会被判为冲突，这也与 DSH 加载时的处理一致。
