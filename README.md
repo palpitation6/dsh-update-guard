@@ -69,13 +69,33 @@ control to guard, and the bundle stays idle.
 
 Paste either spec into **Plugins → Add plugin**:
 
-- the npm package, once published: `@palpitation6/dsh-update-guard@1.0.0`
+- the npm package, once published: `@palpitation6/dsh-update-guard@1.0.1`
 - this repository pinned to a commit, which DSH can later update from the same
   spec: `git+https://github.com/palpitation6/dsh-update-guard.git#<full-40-character-commit>`
 
 The Host half activates when the bundle is selected. The dialog reaches an open
 desktop window through the client bundle; a page refresh applies it when the
 client bundle was not hot-reloaded.
+
+## Update
+
+The profile stores exactly what was installed, so an update keeps the same spec
+kind:
+
+- **Registry install** (the npm package): the Plugins page lists the newer
+  published version and updates in place. Bump `version` before publishing; the
+  manager only offers versions higher than the installed one.
+- **Git install**: install the new commit with the same pinned form —
+  `git+https://github.com/palpitation6/dsh-update-guard.git#<new-full-commit>`.
+  The manager removes the installed copy, installs the new commit with the same
+  selection, and reinstalls the previous copy if that fails. A branch, tag, or
+  range spec cannot be updated this way, and the commit must be the full
+  40-character id.
+- **Local directory install**: installation links the directory, so editing the
+  files is the update. Re-selecting the row recomposes it.
+
+The Profile keeps its selected bundle across all three paths, so nothing else
+needs re-enabling after an update.
 
 ## Limitations
 
