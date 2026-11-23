@@ -1,0 +1,55 @@
+{
+  "name": "@palpitation6/dsh-update-guard",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "palpitation6",
+  "description": "Checks every installed plugin against the DSH version a Desktop update would install, and asks for confirmation before the download starts.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "plugin",
+    "update",
+    "semver"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palpitation6/dsh-update-guard.git"
+  },
+  "homepage": "https://github.com/palpitation6/dsh-update-guard#readme",
+  "bugs": {
+    "url": "https://github.com/palpitation6/dsh-update-guard/issues"
+  },
+  "engines": {
+    "dsh": "^0.2.3-alpha.2"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "compat.js",
+    "cordis.patch.yml",
+    "README.md",
+    "locale/*.json",
+    "icon.svg"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  }
+}

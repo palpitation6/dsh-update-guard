@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Check plugins before updating",
+    "description": "Asks the Host which installed plugins declare support for the DSH version a Desktop update would install, and shows that answer in one confirmation dialog when you pick the new version. Plugins that declare no support for the target release are listed by name, status, and the range they require, so you can cancel or continue. Plugins that declare no DSH requirement, unreadable manifests, and disabled plugins are reported separately instead of being called compatible, and a failed check offers Retry. Nothing is downloaded until you confirm, and no plugin is modified."
+  }
+}

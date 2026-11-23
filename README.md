@@ -1,0 +1,94 @@
+# Update guard
+
+Shows which installed plugins support the DSH release a Desktop update would
+install, and asks for one confirmation before the download starts.
+
+## What it does
+
+The Desktop app offers a new DSH release through the update control in the
+sidebar footer (labelled **Update** / **新版本**). Choosing it normally starts the
+download immediately. With this bundle loaded, that one click first opens a
+confirmation dialog:
+
+- **Everything declared compatible** — the dialog reports how many plugins were
+  checked and one click on **Update to …** continues the download exactly as
+  before.
+- **Some plugins declare no support** — the dialog names them with their
+  installed version and the requirement the target release fails, for example
+  `engines.dsh: >=0.2.2-rc.1 <0.2.3-0`. You can cancel, or choose
+  **Update anyway**.
+- **Plugins that declare no DSH requirement** are counted separately instead of
+  being called compatible, so the headline never claims a support nobody
+  declared.
+- **Some manifests could not be read** — those plugins are named separately and
+  are not counted as conflicts.
+- **The check failed** — the dialog says why and offers **Retry**, **Cancel**,
+  and still **Update anyway**.
+
+A plugin that is already disabled does not count as a conflict, because DSH never
+loads it; if only disabled plugins declare no support, the dialog says so. The
+guard does not list itself.
+
+Cancelling closes the dialog without downloading anything. The shell's own
+download progress, verification, install confirmation, and restart stay
+unchanged; the guard only adds the confirmation in front of the download.
+
+## How compatibility is decided
+
+The Host reproduces the rule DSH itself applies to a plugin
+(`evaluatePluginCompatibility` in `@deepseek-ai/dsh-app-boot`):
+
+- an own `engines.dsh` range decides alone; otherwise
+- every `@deepseek-ai/dsh` and `@deepseek-ai/dsh-*` peer range must match, and
+- ranges are tested with SemVer including prerelease versions, so
+  `^0.2.3-alpha.2` accepts `0.2.4-alpha.1` and `0.2.9`, while
+  `>=0.2.2-rc.1 <0.2.3-0` rejects both.
+
+The answer is therefore what the updated Host will apply to the same manifests.
+Bundles that DSH ships with the installation are not listed: they follow the
+release by construction.
+
+## Where the data comes from
+
+The browser half asks one authenticated route, `GET /api/dsh-update-guard/report`,
+which the Host half registers while the bundle is mounted. For the requested
+target release the Host reads `pluginManager.listBundles()` and
+`listPlugins()`, then reads each third-party package's `package.json` from the
+profile. Nothing is cached, no plugin is loaded or activated, and no network
+request leaves the machine. If the plugin manager is not composed, the profile
+`package.json` bundle list is used instead.
+
+## Use it
+
+Enable the bundle, keep the Desktop app running, and choose **Update** /
+**新版本** in the sidebar footer when one is offered. The dialog appears before
+anything downloads. The gate needs the Desktop application: in an ordinary
+browser page there is no update control to guard, and the bundle stays idle.
+
+## Limitations
+
+- Only the Desktop update control in the sidebar footer is gated. The native
+  application menu's **Check for Updates…** item and enterprise mandatory
+  updates run in the Electron shell before any page code, so they cannot be
+  intercepted from a plugin.
+- The guard reads declared version ranges; it cannot know whether a plugin is
+  actually broken by an update that its range permits.
+- The target version is whatever the shell reports for the offered update; if
+  the shell starts a download without that control, the dialog is not involved.
+- Plugins installed as a `file:`/`link:` directory are checked from that
+  directory's manifest, so editing it changes the answer.
+- The Host locates the profile from a live plugin row that names its own
+  location, then from `DSH_PROFILE_DIR`, then from the profile under the
+  Harness home that selects this bundle. A Host booted without any profile
+  cannot answer, and the dialog reports the failure.
+- The dialog is available in English and Chinese; other application languages
+  fall back to English.
+
+## Notes
+
+- The check reports the running Host's installed plugins; a plugin installed in
+  another profile is not considered.
+- Version exemptions saved for the current release do not carry over to the
+  target release, so an exempted mismatch is still listed.
+- A malformed `engines.dsh` is reported as a conflict, which is also how DSH
+  treats such a manifest at load time.

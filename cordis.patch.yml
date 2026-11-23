@@ -1,0 +1,3 @@
+- insert:
+    - id: update-guard
+      name: '@palpitation6/dsh-update-guard'
