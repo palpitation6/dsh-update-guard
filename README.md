@@ -60,10 +60,22 @@ request leaves the machine. If the plugin manager is not composed, the profile
 
 ## Use it
 
-Enable the bundle, keep the Desktop app running, and choose **Update** /
-**新版本** in the sidebar footer when one is offered. The dialog appears before
-anything downloads. The gate needs the Desktop application: in an ordinary
-browser page there is no update control to guard, and the bundle stays idle.
+Install the bundle, then choose **Update** / **新版本** in the sidebar footer
+when one is offered. The dialog appears before anything downloads. The gate
+needs the Desktop application: in an ordinary browser page there is no update
+control to guard, and the bundle stays idle.
+
+## Install
+
+Paste either spec into **Plugins → Add plugin**:
+
+- the npm package, once published: `@palpitation6/dsh-update-guard@1.0.0`
+- this repository pinned to a commit, which DSH can later update from the same
+  spec: `git+https://github.com/palpitation6/dsh-update-guard.git#<full-40-character-commit>`
+
+The Host half activates when the bundle is selected. The dialog reaches an open
+desktop window through the client bundle; a page refresh applies it when the
+client bundle was not hot-reloaded.
 
 ## Limitations
 
